@@ -1,15 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Test Firebase Connection</title>
+    <title>Test Chat Global</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .online { background: #d4edda; color: #155724; }
+        .offline { background: #f8d7da; color: #721c24; }
+        .messages {
+            border: 1px solid #ddd;
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+        .received { background: #e9ecef; align-self: flex-start; }
+        .sent { background: #007bff; color: white; align-self: flex-end; margin-left: auto; }
+        input, button {
+            padding: 10px;
+            margin: 5px 0;
+            width: 100%;
+        }
+        .users-online {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
 </head>
 <body>
-    <div id="status">Testing connection...</div>
-    <button onclick="testConnection()">Test Koneksi</button>
+    <h1>🟢 Test Chat Global</h1>
+    
+    <div id="status" class="status">Connecting to server...</div>
+    
+    <div class="users-online">
+        <strong>Online Users: <span id="onlineCount">0</span></strong>
+        <div id="usersList"></div>
+    </div>
+
+    <div id="messages" class="messages"></div>
+
+    <input type="text" id="messageInput" placeholder="Ketik pesan...">
+    <button onclick="sendMessage()">Kirim Pesan</button>
 
     <script>
+        // Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyDmRXVOtr8PWq2BZgb_j6QpvCCZQwYAJVI",
             authDomain: "koneksi-b3262.firebaseapp.com",
@@ -25,31 +78,129 @@
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        function testConnection() {
+        // User info
+        const userId = 'user_' + Math.random().toString(36).substr(2, 9);
+        const userName = 'User_' + Math.floor(Math.random() * 1000);
+        let isConnected = false;
+
+        // Connection status
+        const connectedRef = database.ref(".info/connected");
+        connectedRef.on("value", (snap) => {
             const status = document.getElementById('status');
-            
-            // Test write data
-            database.ref('testConnection').set({
-                timestamp: new Date().toISOString(),
-                message: 'Test dari browser'
-            }).then(() => {
-                status.innerHTML = "✅ BERHASIL terhubung ke Firebase!";
-                status.style.color = "green";
+            if (snap.val() === true) {
+                status.innerHTML = "🟢 TERHUBUNG ke server Firebase!";
+                status.className = "status online";
+                isConnected = true;
                 
-                // Test read data
-                database.ref('testConnection').on('value', (snapshot) => {
-                    const data = snapshot.val();
-                    status.innerHTML += `<br>Data diterima: ${JSON.stringify(data)}`;
+                // Setup user online status
+                setupUserStatus();
+                loadMessages();
+                loadOnlineUsers();
+            } else {
+                status.innerHTML = "🔴 OFFLINE - Tidak terhubung ke server";
+                status.className = "status offline";
+                isConnected = false;
+            }
+        });
+
+        // Setup user online status
+        function setupUserStatus() {
+            const userRef = database.ref('users/' + userId);
+            
+            // Set user as online
+            userRef.set({
+                name: userName,
+                online: true,
+                lastSeen: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            // Set offline when user closes page
+            window.addEventListener('beforeunload', () => {
+                userRef.update({
+                    online: false,
+                    lastSeen: firebase.database.ServerValue.TIMESTAMP
                 });
-            }).catch((error) => {
-                status.innerHTML = "❌ GAGAL terhubung: " + error.message;
-                status.style.color = "red";
-                console.error("Error details:", error);
             });
         }
 
-        // Auto test on load
-        setTimeout(testConnection, 1000);
+        // Load online users
+        function loadOnlineUsers() {
+            const usersRef = database.ref('users');
+            usersRef.on('value', (snapshot) => {
+                const users = snapshot.val();
+                const onlineUsers = [];
+                
+                if (users) {
+                    for (let id in users) {
+                        if (users[id].online === true) {
+                            onlineUsers.push(users[id].name);
+                        }
+                    }
+                }
+                
+                document.getElementById('onlineCount').textContent = onlineUsers.length;
+                document.getElementById('usersList').innerHTML = onlineUsers.join(', ');
+            });
+        }
+
+        // Send message
+        function sendMessage() {
+            if (!isConnected) {
+                alert('Tidak terhubung ke server!');
+                return;
+            }
+
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                const messagesRef = database.ref('messages');
+                messagesRef.push({
+                    text: message,
+                    sender: userId,
+                    senderName: userName,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                input.value = '';
+            }
+        }
+
+        // Load messages
+        function loadMessages() {
+            const messagesRef = database.ref('messages');
+            messagesRef.on('child_added', (snapshot) => {
+                const message = snapshot.val();
+                displayMessage(message);
+            });
+        }
+
+        // Display message
+        function displayMessage(message) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            
+            const isMe = message.sender === userId;
+            messageDiv.className = `message ${isMe ? 'sent' : 'received'}`;
+            
+            const time = new Date(message.timestamp).toLocaleTimeString();
+            messageDiv.innerHTML = `
+                <strong>${message.senderName}:</strong> ${message.text}
+                <br><small>${time}</small>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Send message on Enter key
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        console.log('User ID:', userId);
+        console.log('User Name:', userName);
     </script>
 </body>
 </html>
