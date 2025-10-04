@@ -1,60 +1,88 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Test Firebase Connection</title>
+    <title>Test Firebase Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        #status {
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 18px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .success { background: #4CAF50; color: white; }
+        .error { background: #f44336; color: white; }
+        .loading { background: #FF9800; color: white; }
+    </style>
 </head>
 <body>
-    <h1>🔥 Test Firebase Connection</h1>
-    <div id="status" style="padding: 20px; background: #ffcccc; border-radius: 10px;">
-        Testing connection...
-    </div>
+    <h1>🔥 Test Firebase Chat</h1>
+    <div id="status" class="loading">Testing connection to Firebase...</div>
 
+    <!-- SCRIPT COMPAT VERSION (BUKAN MODULE) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     
     <script>
-        // Firebase config
+        // 🔥 CONFIG DARI FIREBASE (YANG KAMU KASIH)
         const firebaseConfig = {
-            apiKey: "AIzaSyDmRXVOtr8PWq2BZgb_j6QpvCCZQwYAJVI",
-            authDomain: "koneksi-b3262.firebaseapp.com",
-            databaseURL: "https://koneksi-b3262-default-rtdb.firebaseio.com",
-            projectId: "koneksi-b3262",
-            storageBucket: "koneksi-b3262.firebasestorage.app",
-            messagingSenderId: "131578716927",
-            appId: "1:131578716927:web:69704bade5ffdb23d4a2ca",
-            measurementId: "G-C3X0E51W7Q"
+            apiKey: "AIzaSyAoGP-zYeg4u-3Nq2bVb1Hjeeauh98uDTg",
+            authDomain: "chat-wa-global.firebaseapp.com",
+            databaseURL: "https://chat-wa-global-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "chat-wa-global",
+            storageBucket: "chat-wa-global.firebasestorage.app",
+            messagingSenderId: "939328390157",
+            appId: "1:939328390157:web:9d5435fc394240593f8144"
         };
 
-        // Initialize Firebase
+        console.log("🔥 Starting Firebase test...");
+        
         try {
+            // Initialize Firebase (COMPAT VERSION)
             const app = firebase.initializeApp(firebaseConfig);
             const database = firebase.database();
             
+            console.log("✅ Firebase initialized");
+            
             const status = document.getElementById('status');
-            status.innerHTML = "✅ Firebase initialized! Testing connection...";
 
-            // Test connection
+            // Check connection status
             const connectedRef = database.ref(".info/connected");
             connectedRef.on("value", function(snap) {
                 if (snap.val() === true) {
-                    status.innerHTML = "🎉 BERHASIL TERHUBUNG ke Firebase!";
-                    status.style.background = "#ccffcc";
+                    console.log("🎉 Connected to Firebase!");
+                    status.textContent = "🎉 BERHASIL TERHUBUNG KE FIREBASE!";
+                    status.className = "success";
                     
-                    // Test write data
-                    database.ref('test').set({
-                        message: 'Hello from test',
-                        timestamp: new Date().toISOString()
+                    // Test write to database
+                    database.ref('connectionTest').set({
+                        message: 'Halo! Firebase connection berhasil!',
+                        timestamp: new Date().toISOString(),
+                        userAgent: navigator.userAgent
                     }).then(() => {
-                        status.innerHTML += "<br>✅ Write data berhasil!";
+                        console.log("✅ Data written successfully");
+                        status.textContent += " ✅ Data berhasil dikirim!";
+                    }).catch(error => {
+                        console.error("❌ Write error:", error);
                     });
+                    
                 } else {
-                    status.innerHTML = "❌ GAGAL terhubung ke Firebase";
-                    status.style.background = "#ffcccc";
+                    console.log("❌ Not connected to Firebase");
+                    status.textContent = "❌ GAGAL TERHUBUNG KE FIREBASE";
+                    status.className = "error";
                 }
             });
 
         } catch (error) {
-            document.getElementById('status').innerHTML = "❌ Error: " + error.message;
+            console.error("❌ Initialization error:", error);
+            document.getElementById('status').textContent = "❌ Error: " + error.message;
+            document.getElementById('status').className = "error";
         }
     </script>
 </body>
