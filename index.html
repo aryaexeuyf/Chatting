@@ -2,93 +2,56 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Chat Firebase Sederhana</title>
+  <title>Chat Global Firebase</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f3f3f3; }
-    #pesan { border: 1px solid #aaa; height: 250px; overflow-y: auto; padding: 5px; background: #fff; }
-    #online { margin: 10px 0; font-size: 14px; color: green; }
-    input { margin: 5px; padding: 5px; }
+    body { font-family: Arial, sans-serif; background:#f3f3f3; }
+    #pesan { border:1px solid #aaa; height:300px; overflow-y:auto; padding:5px; background:#fff; }
+    input { margin:5px; padding:5px; }
   </style>
 </head>
 <body>
-  <h2>Chat Online 🚀</h2>
-  <div id="online">Online: 0</div>
-  <div id="pesan"></div>
-  <input id="nama" placeholder="Nama" />
-  <input id="teks" placeholder="Ketik pesan..." />
-  <button onclick="kirim()">Kirim</button>
+<h2>Chat Global 🚀</h2>
+<div id="pesan"></div>
+<input id="nama" placeholder="Nama" />
+<input id="teks" placeholder="Ketik pesan..." />
+<button onclick="kirim()">Kirim</button>
 
-  <!-- Firebase SDK versi lama (compat, gampang dipahami) -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<!-- Firebase SDK v8 (compat gampang dipakai) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <script>
-    // Config Firebase projectmu
-    const firebaseConfig = {
-      apiKey: "AIzaSyDmRXVOtr8PWq2BZgb_j6QpvCCZQwYAJVI",
-      authDomain: "koneksi-b3262.firebaseapp.com",
-      databaseURL: "https://koneksi-b3262-default-rtdb.firebaseio.com",
-      projectId: "koneksi-b3262",
-      storageBucket: "koneksi-b3262.firebasestorage.app",
-      messagingSenderId: "131578716927",
-      appId: "1:131578716927:web:69704bade5ffdb23d4a2ca",
-      measurementId: "G-C3X0E51W7Q"
-    };
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDmRXVOtr8PWq2BZgb_j6QpvCCZQwYAJVI",
+    authDomain: "koneksi-b3262.firebaseapp.com",
+    databaseURL: "https://koneksi-b3262-default-rtdb.firebaseio.com",
+    projectId: "koneksi-b3262",
+    storageBucket: "koneksi-b3262.firebasestorage.app",
+    messagingSenderId: "131578716927",
+    appId: "1:131578716927:web:69704bade5ffdb23d4a2ca",
+    measurementId: "G-C3X0E51W7Q"
+  };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-    // Bagian Chat
-    const pesanDiv = document.getElementById("pesan");
-    db.ref("chat").on("child_added", snap => {
-      let data = snap.val();
-      pesanDiv.innerHTML += `<p><b>${data.nama}:</b> ${data.teks}</p>`;
-      pesanDiv.scrollTop = pesanDiv.scrollHeight;
-    });
+  // Chat listener
+  const pesanDiv = document.getElementById("pesan");
+  db.ref("messages").on("child_added", snap => {
+    const data = snap.val();
+    pesanDiv.innerHTML += `<p><b>${data.nama}:</b> ${data.teks}</p>`;
+    pesanDiv.scrollTop = pesanDiv.scrollHeight;
+  });
 
-    function kirim() {
-      let nama = document.getElementById("nama").value;
-      let teks = document.getElementById("teks").value;
-      if (nama && teks) {
-        db.ref("chat").push({ nama: nama, teks: teks });
-        document.getElementById("teks").value = "";
-      }
+  // Kirim pesan
+  function kirim() {
+    const nama = document.getElementById("nama").value || "Anon";
+    const teks = document.getElementById("teks").value;
+    if(teks) {
+      db.ref("messages").push({ nama, teks });
+      document.getElementById("teks").value = "";
     }
-
-    // Bagian Deteksi Online User
-    const onlineDiv = document.getElementById("online");
-    const namaInput = document.getElementById("nama");
-
-    // generate ID unik tiap device
-    const deviceId = "user_" + Math.random().toString(36).substr(2, 9);
-
-    // nyambung & diskonek
-    const connectedRef = db.ref(".info/connected");
-    connectedRef.on("value", snap => {
-      if (snap.val() === true) {
-        let nama = namaInput.value || "Anon";
-        const userRef = db.ref("online/" + deviceId);
-        userRef.onDisconnect().remove(); // otomatis ilang pas user mati koneksi
-        userRef.set({ nama: nama, time: Date.now() });
-      }
-    });
-
-    // update jumlah user online
-    db.ref("online").on("value", snap => {
-      let data = snap.val();
-      if (data) {
-        let list = Object.values(data).map(u => u.nama);
-        onlineDiv.innerHTML = "Online: " + list.length + " (" + list.join(", ") + ")";
-      } else {
-        onlineDiv.innerHTML = "Online: 0";
-      }
-    });
-
-    // ganti nama realtime
-    namaInput.addEventListener("input", () => {
-      const userRef = db.ref("online/" + deviceId);
-      userRef.update({ nama: namaInput.value || "Anon" });
-    });
-  </script>
+  }
+</script>
 </body>
 </html>
