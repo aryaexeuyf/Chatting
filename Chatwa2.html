@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Chat Gratis Firebase</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f3f3f3; }
+    #pesan { border: 1px solid #aaa; height: 250px; overflow-y: auto; padding: 5px; background: #fff; }
+    input { margin: 5px; padding: 5px; }
+  </style>
+</head>
+<body>
+  <h2>Chat Online 🚀</h2>
+  <div id="pesan"></div>
+  <input id="nama" placeholder="Nama" />
+  <input id="teks" placeholder="Ketik pesan..." />
+  <button onclick="kirim()">Kirim</button>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+
+  <script>
+    // Config dari projectmu
+    const firebaseConfig = {
+      apiKey: "AIzaSyDmRXVOtr8PWq2BZgb_j6QpvCCZQwYAJVI",
+      authDomain: "koneksi-b3262.firebaseapp.com",
+      databaseURL: "https://koneksi-b3262-default-rtdb.firebaseio.com", // PENTING iki ditambahno
+      projectId: "koneksi-b3262",
+      storageBucket: "koneksi-b3262.firebasestorage.app",
+      messagingSenderId: "131578716927",
+      appId: "1:131578716927:web:69704bade5ffdb23d4a2ca",
+      measurementId: "G-C3X0E51W7Q"
+    };
+
+    // Inisialisasi Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Tampilno pesan real-time
+    const pesanDiv = document.getElementById("pesan");
+    db.ref("chat").on("child_added", snap => {
+      let data = snap.val();
+      pesanDiv.innerHTML += `<p><b>${data.nama}:</b> ${data.teks}</p>`;
+      pesanDiv.scrollTop = pesanDiv.scrollHeight;
+    });
+
+    // Fungsi kirim pesan
+    function kirim() {
+      let nama = document.getElementById("nama").value;
+      let teks = document.getElementById("teks").value;
+      if (nama && teks) {
+        db.ref("chat").push({ nama: nama, teks: teks });
+        document.getElementById("teks").value = "";
+      }
+    }
+  </script>
+</body>
+</html>
